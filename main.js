@@ -57,6 +57,7 @@ const state = {
   running: false,
   hearts: INITIAL_HEARTS,
   score: 0,
+  finalScore: null,
   hero: {
     baseX: HERO_BASE_X,
     x: HERO_BASE_X,
@@ -77,6 +78,7 @@ function resetGame() {
   state.running = false;
   state.hearts = INITIAL_HEARTS;
   state.score = 0;
+  state.finalScore = null;
   state.hero.baseX = HERO_BASE_X;
   state.hero.recoil = 0;
   state.hero.x = HERO_BASE_X;
@@ -109,8 +111,14 @@ function updateHUD() {
   heartsEl.textContent = filled + empty;
 }
 
-function flap() {
-  startGame();
+function handleInputAction() {
+  if (!state.running) {
+    if (state.hearts === 0) {
+      resetGame();
+      return;
+    }
+    startGame();
+  }
   state.hero.vy = FLAP_STRENGTH;
 }
 
@@ -194,8 +202,8 @@ function handleObstacleCollision(obstacle, elapsed) {
   state.lastHitAt = now;
   updateHUD();
   if (state.hearts === 0) {
-    resetGame();
-    return;
+    state.finalScore = state.score;
+    state.running = false;
   }
 }
 
@@ -532,10 +540,14 @@ function drawOverlay() {
     ctx.fillStyle = "#f5f5f5";
     ctx.font = "28px 'Segoe UI', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(state.hearts === 0 ? "Fin del vuelo" : "Listo para volar", GAME_WIDTH / 2, GAME_HEIGHT / 2 - 36);
+    ctx.fillText(state.hearts === 0 ? "Fin del vuelo" : "Listo para volar", GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60);
+    if (state.hearts === 0) {
+      ctx.font = "600 22px 'Segoe UI', sans-serif";
+      ctx.fillText(`Puntos: ${state.finalScore ?? state.score}`, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 18);
+    }
     ctx.font = "18px 'Segoe UI', sans-serif";
     const instruction =
-      state.hearts === 0 ? "Toca Reiniciar o la pantalla para intentarlo de nuevo" : "Toca o haz clic para despegar";
+      state.hearts === 0 ? "Toca o presiona espacio para reiniciar" : "Toca o presiona espacio para despegar";
     ctx.fillText(instruction, GAME_WIDTH / 2, GAME_HEIGHT / 2);
   }
 }
@@ -689,13 +701,13 @@ function handlePointerStart(event) {
     return;
   }
   lastInputAt = now;
-  flap();
+  handleInputAction();
 }
 
 window.addEventListener("keydown", (event) => {
   if (event.code === "Space") {
     event.preventDefault();
-    flap();
+    handleInputAction();
   }
   if (event.code === "KeyR") {
     event.preventDefault();
