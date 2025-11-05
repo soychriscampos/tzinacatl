@@ -4,25 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tzinacatl</title>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <script>
-      (function () {
-        const version = `?v=${Date.now()}`;
-        const head = document.head;
-
-        const stylesheet = document.createElement("link");
-        stylesheet.rel = "stylesheet";
-        stylesheet.href = `style.css${version}`;
-        head.appendChild(stylesheet);
-
-        const moduleScript = document.createElement("script");
-        moduleScript.type = "module";
-        moduleScript.src = `main.js${version}`;
-        head.appendChild(moduleScript);
-      })();
-    </script>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="container">
@@ -41,5 +23,6 @@
         <button id="restart">Reiniciar</button>
       </section>
     </main>
+    <script type="module" src="main.js"></script>
   </body>
 </html>
