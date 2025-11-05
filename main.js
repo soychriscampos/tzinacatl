@@ -16,7 +16,7 @@ beerImage.src = "beer.png";
 const GAME_WIDTH = canvas.width;
 const GAME_HEIGHT = canvas.height;
 
-const INITIAL_HEARTS = 5;
+const INITIAL_HEARTS = 3;
 const OBSTACLE_INTERVAL = 1500;
 const PICKUP_INTERVAL = 6000;
 const BASE_OBSTACLE_SPEED = 190;
@@ -27,10 +27,13 @@ const HIT_COOLDOWN = 900;
 const PICKUP_SIZE = 42;
 const GAP_SIZE = 200;
 const GAP_MARGIN = 90;
+const TIGHT_OBSTACLE_FREQ = 10;
+const EXTREME_OBSTACLE_FREQ = 15;
+const EXTREME_GAP_RATIO = 0.1;
 const RUNWAY_HEIGHT = 120;
 const GROUND_LEVEL = GAME_HEIGHT - RUNWAY_HEIGHT;
-const SPEED_STEP_THRESHOLD = 10;
-const SPEED_INCREMENT = 1 / 6;
+const SPEED_STEP_THRESHOLD = 11;
+const SPEED_INCREMENT = 0.5;
 const INPUT_COOLDOWN_MS = 80;
 const CYCLE_POINTS = 90;
 const HALF_CYCLE = CYCLE_POINTS / 2;
@@ -105,11 +108,28 @@ function flap() {
 
 function spawnObstacle(currentTime) {
   state.obstacleCount += 1;
-  const isTightColumn = state.obstacleCount % 10 === 0;
-  const gapSize = isTightColumn ? Math.max(140, GAP_SIZE - 60) : GAP_SIZE;
+  const isExtremeColumn = state.obstacleCount % EXTREME_OBSTACLE_FREQ === 0;
+  const isTightColumn = !isExtremeColumn && state.obstacleCount % TIGHT_OBSTACLE_FREQ === 0;
+
+  let gapSize = GAP_SIZE;
+  if (isExtremeColumn) {
+    gapSize = Math.max(HERO_SIZE * 1.6, GROUND_LEVEL * EXTREME_GAP_RATIO);
+  } else if (isTightColumn) {
+    gapSize = Math.max(130, GAP_SIZE - 60);
+  }
+
   const minGapY = GAP_MARGIN;
-  const maxGapY = GAME_HEIGHT - GAP_MARGIN - gapSize;
-  const gapY = Math.random() * (maxGapY - minGapY) + minGapY;
+  const maxGapY = Math.max(minGapY, GROUND_LEVEL - GAP_MARGIN - gapSize);
+  let gapY;
+
+  if (isExtremeColumn) {
+    const centeredGap = GROUND_LEVEL / 2 - gapSize / 2;
+    gapY = clamp(centeredGap, minGapY, maxGapY);
+  } else if (maxGapY <= minGapY) {
+    gapY = minGapY;
+  } else {
+    gapY = Math.random() * (maxGapY - minGapY) + minGapY;
+  }
   const width = 80;
 
   state.obstacles.push({
