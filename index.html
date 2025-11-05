@@ -8,9 +8,20 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <script>
-      const cacheBuster = `v=${Date.now()}`;
-      document.write(`<link rel="stylesheet" href="style.css?${cacheBuster}" />`);
-      document.write(`<script type="module" src="main.js?${cacheBuster}"><\\/script>`);
+      (function () {
+        const version = `?v=${Date.now()}`;
+        const head = document.head;
+
+        const stylesheet = document.createElement("link");
+        stylesheet.rel = "stylesheet";
+        stylesheet.href = `style.css${version}`;
+        head.appendChild(stylesheet);
+
+        const moduleScript = document.createElement("script");
+        moduleScript.type = "module";
+        moduleScript.src = `main.js${version}`;
+        head.appendChild(moduleScript);
+      })();
     </script>
   </head>
   <body>
