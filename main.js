@@ -16,13 +16,14 @@ beerImage.src = "beer.png";
 const GAME_WIDTH = canvas.width;
 const GAME_HEIGHT = canvas.height;
 
-const INITIAL_HEARTS = 3;
+const INITIAL_HEARTS = 2;
 const OBSTACLE_INTERVAL = 1500;
 const PICKUP_INTERVAL = 6000;
 const BASE_OBSTACLE_SPEED = 190;
 const GRAVITY = 1200;
 const FLAP_STRENGTH = -360;
 const HERO_SIZE = 56;
+const HERO_BASE_X = GAME_WIDTH * 0.22;
 const HIT_COOLDOWN = 900;
 const PICKUP_SIZE = 42;
 const GAP_SIZE = 200;
@@ -30,6 +31,9 @@ const GAP_MARGIN = 90;
 const TIGHT_OBSTACLE_FREQ = 10;
 const EXTREME_OBSTACLE_FREQ = 15;
 const EXTREME_GAP_RATIO = 0.1;
+const HIT_RECOIL_DISTANCE = 26;
+const HIT_RECOIL_RETURN_RATE = 140;
+const HIT_VERTICAL_REBOUND = FLAP_STRENGTH * 0.75;
 const RUNWAY_HEIGHT = 120;
 const GROUND_LEVEL = GAME_HEIGHT - RUNWAY_HEIGHT;
 const SPEED_STEP_THRESHOLD = 11;
@@ -54,10 +58,12 @@ const state = {
   hearts: INITIAL_HEARTS,
   score: 0,
   hero: {
-    x: GAME_WIDTH * 0.22,
+    baseX: HERO_BASE_X,
+    x: HERO_BASE_X,
     y: GAME_HEIGHT / 2,
     vy: 0,
     rotation: 0,
+    recoil: 0,
   },
   obstacles: [],
   pickups: [],
@@ -71,7 +77,9 @@ function resetGame() {
   state.running = false;
   state.hearts = INITIAL_HEARTS;
   state.score = 0;
-  state.hero.x = GAME_WIDTH * 0.22;
+  state.hero.baseX = HERO_BASE_X;
+  state.hero.recoil = 0;
+  state.hero.x = HERO_BASE_X;
   state.hero.y = GAME_HEIGHT / 2;
   state.hero.vy = 0;
   state.hero.rotation = 0;
@@ -177,6 +185,12 @@ function handleObstacleCollision(obstacle, elapsed) {
     return;
   }
   state.hearts = Math.max(0, state.hearts - 1);
+  const hero = state.hero;
+  hero.recoil = HIT_RECOIL_DISTANCE;
+  hero.vy = HIT_VERTICAL_REBOUND;
+  hero.y = Math.max(0, hero.y - 8);
+  hero.rotation = -0.35;
+  hero.x = Math.max(30, hero.baseX - hero.recoil);
   state.lastHitAt = now;
   updateHUD();
   if (state.hearts === 0) {
@@ -194,7 +208,13 @@ function handlePickupCollision(pickup) {
 
 function update(dt, elapsed) {
   const hero = state.hero;
+  if (hero.recoil > 0) {
+    hero.recoil = Math.max(0, hero.recoil - HIT_RECOIL_RETURN_RATE * dt);
+  }
+  hero.x = Math.max(30, hero.baseX - hero.recoil);
+
   const speed = getCurrentSpeed();
+  const speedMultiplier = Math.max(1, speed / BASE_OBSTACLE_SPEED);
   hero.vy += GRAVITY * dt;
   hero.y += hero.vy * dt;
   hero.rotation = Math.max(-0.35, Math.min(0.45, hero.vy / 600));
@@ -208,11 +228,11 @@ function update(dt, elapsed) {
     hero.rotation = -0.2;
   }
 
-  if (elapsed - state.lastObstacleAt > OBSTACLE_INTERVAL) {
+  if (elapsed - state.lastObstacleAt > OBSTACLE_INTERVAL / speedMultiplier) {
     spawnObstacle(elapsed);
   }
 
-  if (elapsed - state.lastPickupAt > PICKUP_INTERVAL) {
+  if (elapsed - state.lastPickupAt > PICKUP_INTERVAL / Math.pow(speedMultiplier, 0.8)) {
     if (Math.random() < 0.75) {
       spawnPickup(elapsed);
     } else {
